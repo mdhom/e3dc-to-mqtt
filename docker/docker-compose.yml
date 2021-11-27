@@ -1,0 +1,11 @@
+version: '3.3'
+
+services:
+  weconnect-mqtt:
+    image: "mdhom/e3dc-to-mqtt:latest"
+    restart: unless-stopped
+    environment:
+      - USER=my@vwid-user.de
+      - PASSWORD=myvwidpassword
+      - BROKER_ADDRESS=192.168.0.1
+      - ADDITIONAL_PARAMETERS=--mqtt-username test --mqtt-password test
