@@ -30,8 +30,16 @@ async def __main():
     args = parser.parse_args()
 
     logging.basicConfig(level=args.loglevel)
-    print(f'E3/DC to MQTT')
-    print(f"args {args}")
+
+    print()
+    print("  ______ ____     _______   _____    ___        __  __  ____ _______ _______ ")
+    print(" |  ____|___ \   / /  __ \ / ____|  |__ \      |  \/  |/ __ \__   __|__   __|")
+    print(" | |__    __) | / /| |  | | |   ______ ) |_____| \  / | |  | | | |     | |   ")
+    print(" |  __|  |__ < / / | |  | | |  |______/ /______| |\/| | |  | | | |     | |   ")
+    print(" | |____ ___) / /  | |__| | |____    / /_      | |  | | |__| | | |     | |   ")
+    print(" |______|____/_/   |_____/ \_____|  |____|     |_|  |_|\___\_\ |_|     |_|   ")
+    print()
+    print()
 
     try:
         mqtt_client = MqttClient(args.mqttbroker, args.mqttport, args.mqttclientid, args.mqttkeepalive, args.mqttusername, args.mqttpassword)
