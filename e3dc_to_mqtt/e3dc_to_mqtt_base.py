@@ -18,9 +18,9 @@ async def __main():
     parser = argparse.ArgumentParser(
         prog='e3dc-to-mqtt',
         description='Commandline Interface to interact with E3/DC devices')
-    parser.add_argument('--version', action='version',
-                        version=f'%(prog)s {__version__}')
-    parser.add_argument('--mqtt-broker',    type=str, dest='mqttbroker',    required=True, help='Address of MQTT Broker to connect to')
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
+    parser.add_argument('--loglevel',       type=str, dest='loglevel',      required=False, default="DEBUG", help='Minimum log level, DEBUG/INFO/WARNING/ERROR/CRITICAL"')
+    parser.add_argument('--mqtt-broker',    type=str, dest='mqttbroker',    required=True,  help='Address of MQTT Broker to connect to')
     parser.add_argument('--mqtt-port',      type=int, dest='mqttport',      required=False, default=1883, help='Port of MQTT Broker. Default is 1883 (8883 for TLS)')
     parser.add_argument('--mqtt-clientid',  type=str, dest='mqttclientid',  required=False, help='Id of the client. Default is a random id')
     parser.add_argument('--mqtt-keepalive', type=int, dest='mqttkeepalive', required=False, default=60, help='Time between keep-alive messages')
@@ -29,7 +29,7 @@ async def __main():
     
     args = parser.parse_args()
 
-    logging.basicConfig(level="DEBUG")
+    logging.basicConfig(level=args.loglevel)
     print(f'E3/DC to MQTT')
     print(f"args {args}")
 
