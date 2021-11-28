@@ -1,10 +1,8 @@
 name: Docker Image CI
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  release:
+    types: [ published ]
 
 jobs:
   push_to_docker_hub:
@@ -13,7 +11,7 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
-      
+        
       - name: Log in to Docker Hub
         uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
         with:
@@ -31,5 +29,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: mdhom/e3dc-to-mqtt:latest
+          tags: mdhom/e3dc-to-mqtt:latest, mdhom/e3dc-to-mqtt:${{ github.event.release.tag_name }}
           labels: ${{ steps.meta.outputs.labels }}
