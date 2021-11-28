@@ -8,4 +8,4 @@ Just run
 
  After that, you can just run
  
- `e3dc-to-mqtt --mqttbroker 192.168.188.149`
+ `e3dc-to-mqtt --mqtt-broker 192.168.188.149 --e3dc-host 192.168.188.235 --e3dc-username *** --e3dc-password *** --e3dc-rscpkey ***`
