@@ -1,22 +1,21 @@
 
 FROM python:3.9-slim-bullseye
 
-ENV USER=
-ENV PASSWORD=
-ENV BROKER_ADDRESS=
+ENV MQTT_BROKER=
+
+ENV E3DC_HOST=
+ENV E3DC_USERNAME=
+ENV E3DC_PASSWORD=
+ENV E3DC_RSCPKEY=
+
 ENV ADDITIONAL_PARAMETERS=
 
-# Pillow depenencies
-RUN apk --no-cache add --virtual build-dependencies build-base \
-    && apk --no-cache add jpeg-dev \
-                          zlib-dev \
-                          freetype-dev \
-                          lcms2-dev \
-                          openjpeg-dev \
-                          tiff-dev \
-                          tk-dev \
-                          tcl-dev \
-    && pip install weconnect-mqtt \
-    && apk del build-dependencies
+COPY ../e3dc_to_mqtt/*.py ./e3dc_to_mqtt/
+COPY ../*.py .
+COPY ../README.md .
 
-CMD weconnect-mqtt --username ${USER} --password ${PASSWORD} --mqttbroker ${BROKER_ADDRESS} ${ADDITIONAL_PARAMETERS}
+RUN pip install pye3dc \
+    && pip install paho-mqtt
+RUN pip install -e ./
+
+CMD e3dc-to-mqtt --mqtt-broker ${MQTT_BROKER} --e3dc-host ${E3DC_HOST} --e3dc-username ${E3DC_USERNAME} --e3dc-password ${E3DC_PASSWORD} --e3dc-rscpkey ${E3DC_RSCPKEY} ${ADDITIONAL_PARAMETERS}
