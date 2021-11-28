@@ -10,9 +10,9 @@ ENV E3DC_RSCPKEY=
 
 ENV ADDITIONAL_PARAMETERS=
 
-COPY ../e3dc_to_mqtt/*.py ./e3dc_to_mqtt/
-COPY ../*.py .
-COPY ../README.md .
+COPY ./e3dc_to_mqtt/*.py ./e3dc_to_mqtt/
+COPY ./*.py .
+COPY ./README.md .
 
 RUN pip install pye3dc \
     && pip install paho-mqtt
