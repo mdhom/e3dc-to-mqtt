@@ -7,17 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-
-  build:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag e3dc-to-mqtt:$(date +%s)
-      
-  push_to_registry:
+  push_to_docker_hub:
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     steps:
@@ -41,5 +31,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: e3dc-to-mqtt:latest
           labels: ${{ steps.meta.outputs.labels }}
