@@ -2,6 +2,8 @@ import argparse
 import logging
 import asyncio
 import json
+import time
+from concurrent.futures._base import CancelledError
 
 import paho.mqtt.client as mqtt
 
@@ -24,6 +26,7 @@ async def __main():
         description='Commandline Interface to interact with E3/DC devices')
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     parser.add_argument('--loglevel',       type=str, dest='loglevel',      required=False, default="DEBUG", help='Minimum log level, DEBUG/INFO/WARNING/ERROR/CRITICAL"')
+    parser.add_argument('--interval',       type=float, dest='interval',    required=False, default=1.0, help='Interval in seconds in which E3/DC data is requested. Minimum: 1.0')
 
     parser.add_argument('--mqtt-broker',    type=str, dest='mqttbroker',    required=True,  help='Address of MQTT Broker to connect to')
     parser.add_argument('--mqtt-port',      type=int, dest='mqttport',      required=False, default=1883, help='Port of MQTT Broker. Default is 1883 (8883 for TLS)')
@@ -42,6 +45,10 @@ async def __main():
 
     logging.basicConfig(level=args.loglevel)
 
+    if float(args.interval) < 1:
+        LOGGER.error(f'interval must be >= 1')
+        return
+
     print()
     print("  ______ ____     _______   _____    ___        __  __  ____ _______ _______ ")
     print(" |  ____|___ \   / /  __ \ / ____|  |__ \      |  \/  |/ __ \__   __|__   __|")
@@ -56,8 +63,10 @@ async def __main():
         mqtt = MqttClient(args.mqttbroker, args.mqttport, args.mqttclientid, args.mqttkeepalive, args.mqttusername, args.mqttpassword, args.mqttbasetopic)
         e3dc = E3DCClient(args.e3dchost, args.e3dcusername, args.e3dcpassword, args.e3dcrscpkey)
 
+        last_cycle  = 0.0
         while True:
-            await asyncio.sleep(1)
+            await asyncio.sleep(max(0, args.interval - (time.time() - last_cycle)))
+            last_cycle = time.time()
 
             if not mqtt.is_connected:
                 LOGGER.error(f'mqtt not connected')
@@ -86,6 +95,8 @@ async def __main():
 
     except KeyboardInterrupt:
         pass # do nothing, close requested
+    except CancelledError:
+        pass # do nothing, close requested
     except Exception as e:
         LOGGER.exception(f'exception in main loop')
     finally:
@@ -98,14 +109,14 @@ class E3DCClient:
         self.__num_batteries = 5
         self.__num_pvi_trackers = 5
 
-    def get_system_info(self): #TODO return dataclass
+    def get_system_info(self):
         self.__e3dc.get_system_info_static()
         return self.__e3dc.get_system_info()
 
-    def get_power_data(self): #TODO return dataclass
+    def get_power_data(self):
         return self.__e3dc.get_power_data()
 
-    def get_battery_data(self): #TODO return dataclass
+    def get_battery_data(self):
         data = []
         for i in range(0,self.__num_batteries):
             try:
@@ -119,7 +130,7 @@ class E3DCClient:
         self.__num_batteries = len(data)
         return data
 
-    def get_pvi_data(self): #TODO return dataclass
+    def get_pvi_data(self):
         data = []
         for i in range(0, self.__num_pvi_trackers):
             try:
@@ -134,7 +145,7 @@ class E3DCClient:
         self.__num_pvi_trackers = len(data)
         return data
 
-    def get_live_data(self): #TODO return dataclass
+    def get_live_data(self):
         data = self.__e3dc.poll()
         data['time'] = None # delete from return value because not used and not json serializable
         return data
