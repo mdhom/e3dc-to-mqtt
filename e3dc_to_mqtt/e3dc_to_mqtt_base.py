@@ -92,6 +92,7 @@ async def __main():
 
             live_data = e3dc.get_live_data()
             LOGGER.debug(f'received live data:\r\n' + json.dumps(live_data, indent=2))
+            mqtt.publish(f'live', live_data)
 
     except KeyboardInterrupt:
         pass # do nothing, close requested
