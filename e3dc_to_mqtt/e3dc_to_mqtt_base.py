@@ -25,7 +25,7 @@ async def __main():
         prog='e3dc-to-mqtt',
         description='Commandline Interface to interact with E3/DC devices')
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
-    parser.add_argument('--loglevel',       type=str, dest='loglevel',      required=False, default="DEBUG", help='Minimum log level, DEBUG/INFO/WARNING/ERROR/CRITICAL"')
+    parser.add_argument('--loglevel',       type=str, dest='loglevel',      required=False, default="WARNING", help='Minimum log level, DEBUG/INFO/WARNING/ERROR/CRITICAL"')
     parser.add_argument('--interval',       type=float, dest='interval',    required=False, default=1.0, help='Interval in seconds in which E3/DC data is requested. Minimum: 1.0')
 
     parser.add_argument('--mqtt-broker',    type=str, dest='mqttbroker',    required=True,  help='Address of MQTT Broker to connect to')
