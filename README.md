@@ -71,16 +71,34 @@ If you want to use the latest release without cloning the source code, just run
 ### Installing from source
 If you want to use the latest dev commits, you can install the package directly from source:
 
-`python -m pip install -e . --user`
+`python3 -m pip install -e . --user`
 
 Make sure to run it from this projects main directory (containing setup.py).
 
 ## Usage
+
+### Command line parameters
 To start the cli tool, just run
 
  `e3dc-to-mqtt --mqtt-broker *** --e3dc-host *** --e3dc-username *** --e3dc-password *** --e3dc-rscpkey ***`
 
  The tool will then start polling the data from the device and publish it to mqtt.
+
+### Config file
+ Instead of passing all parameters as args, you can pass a config json file:
+ 
+ `e3dc-to-mqtt --configFile config.json`
+
+ The file must be a valid json with the following content:
+ ```
+ {
+    "mqttbroker": "xxx",
+    "e3dchost": "xxx",
+    "e3dcusername": "xxx",
+    "e3dcpassword": "xxx",
+    "e3dcrscpkey": "xxx"
+}
+ ```
 
 # Links:
 - [python-e3dc](https://github.com/fsantini/python-e3dc): Base library to connect to E3/DC device and poll live data from
