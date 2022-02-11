@@ -1,5 +1,5 @@
 name: Docker Image CI
-
+# based on https://blog.oddbit.com/post/2020-09-25-building-multi-architecture-im/
 on:
   release:
     types: [ published ]
