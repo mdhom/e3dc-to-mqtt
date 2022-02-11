@@ -25,6 +25,7 @@ async def __main():
         prog='e3dc-to-mqtt',
         description='Commandline Interface to interact with E3/DC devices')
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
+    parser.add_argument('--releaseName',    type=str,   dest='releaseName', required=False, help='Name of the current release')
     parser.add_argument('--configFile',     type=str,   dest='configFile',  required=False, help='File where config is stored (JSON)')
     parser.add_argument('--loglevel',       type=str,   dest='loglevel',    required=False, default="WARNING", help='Minimum log level, DEBUG/INFO/WARNING/ERROR/CRITICAL"')
     parser.add_argument('--interval',       type=float, dest='interval',    required=False, default=1.0, help='Interval in seconds in which E3/DC data is requested. Minimum: 1.0')
@@ -60,6 +61,8 @@ async def __main():
     LOGGER.debug("")
     LOGGER.debug("")
     LOGGER.debug(f'Version: {__version__}')
+    if args.releaseName is not None:
+        LOGGER.debug(f'Release name: {args.releaseName}')
 
     if args.configFile is not None:
         LOGGER.debug(f'Loading config from file {args.configFile}')

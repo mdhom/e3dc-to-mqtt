@@ -1,6 +1,8 @@
 
 FROM python:3.9-slim-bullseye
 
+ARG RELEASE_NAME
+
 ENV MQTT_BROKER=
 
 ENV E3DC_HOST=
@@ -24,4 +26,4 @@ RUN pip install paho-mqtt
 # install our e3dc-to-mqtt package from src
 RUN pip install -e ./
 
-CMD e3dc-to-mqtt --mqtt-broker ${MQTT_BROKER} --e3dc-host ${E3DC_HOST} --e3dc-username ${E3DC_USERNAME} --e3dc-password ${E3DC_PASSWORD} --e3dc-rscpkey ${E3DC_RSCPKEY} ${ADDITIONAL_PARAMETERS}
+CMD e3dc-to-mqtt --mqtt-broker ${MQTT_BROKER} --e3dc-host ${E3DC_HOST} --e3dc-username ${E3DC_USERNAME} --e3dc-password ${E3DC_PASSWORD} --e3dc-rscpkey ${E3DC_RSCPKEY} --releaseName ${RELEASE_NAME} ${ADDITIONAL_PARAMETERS}
