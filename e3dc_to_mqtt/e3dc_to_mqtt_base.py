@@ -50,15 +50,15 @@ async def __main():
         LOGGER.error(f'interval must be >= 1')
         return
 
-    LOGGER.debug()
+    LOGGER.debug("")
     LOGGER.debug("  ______ ____     _______   _____    ___        __  __  ____ _______ _______ ")
     LOGGER.debug(" |  ____|___ \   / /  __ \ / ____|  |__ \      |  \/  |/ __ \__   __|__   __|")
     LOGGER.debug(" | |__    __) | / /| |  | | |   ______ ) |_____| \  / | |  | | | |     | |   ")
     LOGGER.debug(" |  __|  |__ < / / | |  | | |  |______/ /______| |\/| | |  | | | |     | |   ")
     LOGGER.debug(" | |____ ___) / /  | |__| | |____    / /_      | |  | | |__| | | |     | |   ")
     LOGGER.debug(" |______|____/_/   |_____/ \_____|  |____|     |_|  |_|\___\_\ |_|     |_|   ")
-    LOGGER.debug()
-    LOGGER.debug()
+    LOGGER.debug("")
+    LOGGER.debug("")
     LOGGER.debug(f'Version: {__version__}')
 
     if args.configFile is not None:
