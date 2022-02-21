@@ -107,8 +107,8 @@ async def __main():
             LOGGER.debug(f'received system info:\r\n' + json.dumps(system_info, indent=2))
             mqtt.publish('system_info', system_info)
 
-            power_data = e3dc.get_power_data()
-            LOGGER.debug(f'received power data:\r\n' + json.dumps(power_data, indent=2))
+            power_data = e3dc.get_powermeter_data()
+            LOGGER.debug(f'received powermeter data:\r\n' + json.dumps(power_data, indent=2))
             mqtt.publish(f'power_data', power_data)
 
             battery_data = e3dc.get_battery_data()
@@ -140,13 +140,30 @@ class E3DCClient:
         self.__e3dc = E3DC(E3DC.CONNECT_LOCAL, username=username, password=password, ipAddress=host, key=rscp_key)
         self.__num_batteries = 5
         self.__num_pvi_trackers = 5
+        self.__pm_index = None
 
     def get_system_info(self):
         self.__e3dc.get_system_info_static()
         return self.__e3dc.get_system_info()
 
-    def get_power_data(self):
-        return self.__e3dc.get_power_data()
+    def __find_power_meter_index(self) -> int:
+        indices = [0, 6, 1, 2, 3, 4, 5]
+        for index in indices:
+            try:
+                LOGGER.debug(f'testing powermeter index {index}')
+                power_data = self.__e3dc.get_powermeter_data(pmIndex=index)
+                if power_data is not None:
+                    LOGGER.debug(f'Powermeter index {index} found')
+                    return index
+            except Exception:
+                LOGGER.error(f'Powermeter index {index} failed')
+        return None
+
+    def get_powermeter_data(self):
+        if self.__pm_index is None:
+            self.__pm_index = self.__find_power_meter_index()
+
+        return self.__e3dc.get_powermeter_data(pmIndex=self.__pm_index)
 
     def get_battery_data(self):
         data = []
