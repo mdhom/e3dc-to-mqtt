@@ -3,7 +3,6 @@ import logging
 import asyncio
 import json
 import time
-import schedule
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta
 from concurrent.futures._base import CancelledError
