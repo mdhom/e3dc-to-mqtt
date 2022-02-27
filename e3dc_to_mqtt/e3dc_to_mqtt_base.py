@@ -127,12 +127,12 @@ async def __main():
             LOGGER.debug(f'received live data:\r\n' + json.dumps(live_data, indent=2))
             mqtt.publish(f'live', live_data)
 
-            db_data_day = e3dc.get_db_data_day(force=True)
+            db_data_day = e3dc.get_db_data_day()
             if (db_data_day is not None):
                 LOGGER.debug(f'received db data DAY:\r\n' + json.dumps(db_data_day, indent=2))
                 mqtt.publish(f'db/day', db_data_day)
 
-            db_data_month = e3dc.get_db_data_month(force=True)
+            db_data_month = e3dc.get_db_data_month()
             if db_data_month is not None:
                 LOGGER.debug(f'received db data MONTH:\r\n' + json.dumps(db_data_month, indent=2))
                 mqtt.publish(f'db/month', db_data_month)
