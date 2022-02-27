@@ -3,6 +3,9 @@ import logging
 import asyncio
 import json
 import time
+import schedule
+from dateutil.relativedelta import relativedelta
+from datetime import datetime, timedelta
 from concurrent.futures._base import CancelledError
 
 import paho.mqtt.client as mqtt
@@ -125,6 +128,16 @@ async def __main():
             LOGGER.debug(f'received live data:\r\n' + json.dumps(live_data, indent=2))
             mqtt.publish(f'live', live_data)
 
+            db_data_day = e3dc.get_db_data_day(force=True)
+            if (db_data_day is not None):
+                LOGGER.debug(f'received db data DAY:\r\n' + json.dumps(db_data_day, indent=2))
+                mqtt.publish(f'db/day', db_data_day)
+
+            db_data_month = e3dc.get_db_data_month(force=True)
+            if db_data_month is not None:
+                LOGGER.debug(f'received db data MONTH:\r\n' + json.dumps(db_data_month, indent=2))
+                mqtt.publish(f'db/month', db_data_month)
+
     except KeyboardInterrupt:
         pass # do nothing, close requested
     except CancelledError:
@@ -141,6 +154,8 @@ class E3DCClient:
         self.__num_batteries = 5
         self.__num_pvi_trackers = 5
         self.__pm_index = None
+        self.__last_db_data_day = datetime.today()
+        self.__last_db_data_month = -1
 
     def get_system_info(self):
         self.__e3dc.get_system_info_static()
@@ -198,6 +213,24 @@ class E3DCClient:
         data = self.__e3dc.poll()
         data['time'] = None # delete from return value because not used and not json serializable
         return data
+
+    def get_db_data_day(self, force:bool = False):
+        start_date = datetime.today() - timedelta(days=1)
+        if force or (start_date > self.__last_db_data_day):
+            self.__last_db_data_day = start_date
+            data = self.__e3dc.get_db_data(startDate=start_date, timespan="DAY")
+            data['date'] = start_date.strftime("%Y-%m-%d")
+            return data
+        return None
+        
+    def get_db_data_month(self, force:bool = False):
+        start_date = datetime.today().replace(day=1) - relativedelta(months=1)
+        if force or (start_date.month > self.__last_db_data_month):
+            self.__last_db_data_month = start_date.month
+            data = self.__e3dc.get_db_data(startDate=start_date, timespan="MONTH")
+            data['date'] = start_date.strftime("%Y-%m")
+            return data
+        return None
 
 class MqttClient:
 
