@@ -78,11 +78,13 @@ async def __main():
         __add_from_config(args, config, 'e3dcpassword')
         __add_from_config(args, config, 'e3dcrscpkey')
 
-    logging.basicConfig(level=args.loglevel)
 
-    if float(args.interval) < 1:
-        LOGGER.error(f'interval must be >= 1')
+    valid_loglevels = ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
+    if args.loglevel not in valid_loglevels:
+        print(f'Invalid log level given: {args.loglevel}, allowed values: {", ".join(valid_loglevels)}')
         return
+
+    logging.basicConfig(level=args.loglevel)
 
     LOGGER.debug("")
     LOGGER.debug("  ______ ____     _______   _____    ___        __  __  ____ _______ _______ ")
@@ -97,7 +99,6 @@ async def __main():
     if args.releaseName is not None:
         LOGGER.debug(f'Release name: {args.releaseName}')
 
-        
     if args.mqttbroker is None:
         LOGGER.error(f'no mqtt broker given')
         return
@@ -112,6 +113,9 @@ async def __main():
         return
     if args.e3dcrscpkey is None:
         LOGGER.error(f'no E3DC RSCP key given')
+        return
+    if float(args.interval) < 1:
+        LOGGER.error(f'interval must be >= 1')
         return
 
     try:
