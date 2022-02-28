@@ -5,8 +5,9 @@ import json
 import time
 import re
 from enum import Enum
+from types import coroutine
 from dateutil.relativedelta import relativedelta
-from datetime import datetime, timedelta, date
+from datetime import timedelta, date
 from concurrent.futures._base import CancelledError
 
 from e3dc import E3DC
@@ -44,13 +45,14 @@ class E3DC2MQTT:
     def __init__(self) -> None:
         e3dc = None  # type: E3DCClient
         mqtt = None  # type: MqttClient
+        loop = None  # type: asyncio.AbstractEventLoop
 
     def __add_from_config(self, cmdArgs: dict, config: dict, name: str):
         if name in config:
             setattr(cmdArgs, name, config[name])
 
     async def run(self):
-        loop = asyncio.new_event_loop()
+        self.loop = asyncio.new_event_loop()
         parser = argparse.ArgumentParser(prog="e3dc-to-mqtt", description="Commandline Interface to interact with E3/DC devices")
         parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
         parser.add_argument("--releaseName", type=str, dest="releaseName", help="Name of the current release")
@@ -132,7 +134,7 @@ class E3DC2MQTT:
             return
 
         try:
-            self.mqtt = MqttClient(LOGGER, loop, args.mqttbroker, args.mqttport, args.mqttclientid, args.mqttkeepalive, args.mqttusername, args.mqttpassword, args.mqttbasetopic)
+            self.mqtt = MqttClient(LOGGER, self.loop, args.mqttbroker, args.mqttport, args.mqttclientid, args.mqttkeepalive, args.mqttusername, args.mqttpassword, args.mqttbasetopic)
             await self.mqtt.start()
             self.mqtt.subscribe_to("/db/get/+", self.__on_mqtt_get_year)
             self.mqtt.subscribe_to("/db/get/+/+", self.__on_mqtt_get_month)
@@ -148,34 +150,34 @@ class E3DC2MQTT:
                     LOGGER.error(f"mqtt not connected")
                     continue
 
-                system_info = self.e3dc.get_system_info()
+                system_info = await self.e3dc.get_system_info()
                 LOGGER.debug(f"received system info:\r\n" + json.dumps(system_info, indent=2))
                 self.mqtt.publish("system_info", system_info)
 
-                power_data = self.e3dc.get_powermeter_data()
+                power_data = await self.e3dc.get_powermeter_data()
                 LOGGER.debug(f"received powermeter data:\r\n" + json.dumps(power_data, indent=2))
                 self.mqtt.publish(f"power_data", power_data)
 
-                battery_data = self.e3dc.get_battery_data()
+                battery_data = await self.e3dc.get_battery_data()
                 LOGGER.debug(f"received battery data:\r\n" + json.dumps(battery_data, indent=2))
                 for idx, bat in enumerate(battery_data):
                     self.mqtt.publish(f"battery_data/{idx}", bat)
 
-                pvi_data = self.e3dc.get_pvi_data()
+                pvi_data = await self.e3dc.get_pvi_data()
                 LOGGER.debug(f"received pvi data:\r\n" + json.dumps(pvi_data, indent=2))
                 for idx, pvi in enumerate(pvi_data):
                     self.mqtt.publish(f'pvi_data/{pvi["stringIndex"]}/{idx}', pvi)
 
-                live_data = self.e3dc.get_live_data()
+                live_data = await self.e3dc.get_live_data()
                 LOGGER.debug(f"received live data:\r\n" + json.dumps(live_data, indent=2))
                 self.mqtt.publish(f"live", live_data)
 
-                db_data_day = self.e3dc.get_db_data_day()
+                db_data_day = await self.e3dc.get_db_data_day()
                 if db_data_day is not None:
                     LOGGER.debug(f"received db data DAY:\r\n" + json.dumps(db_data_day, indent=2))
                     self.mqtt.publish(f"db/data/{db_data_day['date']}", db_data_day)
 
-                db_data_month = self.e3dc.get_db_data_month()
+                db_data_month = await self.e3dc.get_db_data_month()
                 if db_data_month is not None:
                     LOGGER.debug(f"received db data MONTH:\r\n" + json.dumps(db_data_month, indent=2))
                     self.mqtt.publish(f"db/data/{db_data_month['date']}", db_data_month)
@@ -193,38 +195,44 @@ class E3DC2MQTT:
     def __on_mqtt_get_year(self, client, userdata, msg):
         matches = re.findall(r"\/(\d+$)", msg.topic, re.MULTILINE)
         year = int(matches[0])
-        self.__fetch_db_from_mqtt(DbTimespan.YEAR, year)
+        coroutine = self.__fetch_db_from_mqtt(DbTimespan.YEAR, year)
+        self.loop.run_until_complete(coroutine)
 
     def __on_mqtt_get_month(self, client, userdata, msg):
         matches = re.findall(r"\/(\d+)\/(\d+$)", msg.topic, re.MULTILINE)
         year = int(matches[0][0])
         month = int(matches[0][1])
-        self.__fetch_db_from_mqtt(DbTimespan.MONTH, year, month)
+        coroutine = self.__fetch_db_from_mqtt(DbTimespan.MONTH, year, month)
+        self.loop.run_until_complete(coroutine)
 
     def __on_mqtt_get_day(self, client, userdata, msg):
         matches = re.findall(r"\/(\d+)\/(\d+)\/(\d+$)", msg.topic, re.MULTILINE)
         year = int(matches[0][0])
         month = int(matches[0][1])
         day = int(matches[0][2])
-        self.__fetch_db_from_mqtt(DbTimespan.DAY, year, month, day)
+        coroutine = self.__fetch_db_from_mqtt(DbTimespan.DAY, year, month, day)
+        self.loop.run_until_complete(coroutine)
 
-    def __fetch_db_from_mqtt(self, timespan: DbTimespan, year: int, month: int = None, day: int = None):
-        if timespan == DbTimespan.YEAR:
-            request_date = date(year, 1, 1)
-            topic_attachment = f"{year}"
-        elif timespan == DbTimespan.MONTH:
-            request_date = date(year, month, 1)
-            topic_attachment = f"{year}/{str(month).zfill(2)}"
-        else:
-            request_date = date(year, month, day)
-            topic_attachment = f"{year}/{str(month).zfill(2)}/{str(day).zfill(2)}"
+    async def __fetch_db_from_mqtt(self, timespan: DbTimespan, year: int, month: int = None, day: int = None):
+        try:
+            if timespan == DbTimespan.YEAR:
+                request_date = date(year, 1, 1)
+                topic_attachment = f"{year}"
+            elif timespan == DbTimespan.MONTH:
+                request_date = date(year, month, 1)
+                topic_attachment = f"{year}/{str(month).zfill(2)}"
+            else:
+                request_date = date(year, month, day)
+                topic_attachment = f"{year}/{str(month).zfill(2)}/{str(day).zfill(2)}"
 
-        if request_date > date.today():
-            LOGGER.error(f"invalid request_date: {request_date}")
-            return
+            if request_date > date.today():
+                LOGGER.error(f"invalid request_date: {request_date}")
+                return
 
-        data = self.e3dc.get_db_data(request_date, timespan)
-        self.mqtt.publish(f"db/data/{topic_attachment}", data)
+            data = await self.e3dc.get_db_data(request_date, timespan)
+            self.mqtt.publish(f"db/data/{topic_attachment}", data)
+        except Exception as e:
+            LOGGER.exception()
 
 
 class E3DCClient:
@@ -235,10 +243,16 @@ class E3DCClient:
         self.__pm_index = None
         self.__last_db_data_day = date.fromtimestamp(0)
         self.__last_db_data_month = -1
+        self.__lock = asyncio.Lock()
 
-    def get_system_info(self):
-        self.__e3dc.get_system_info_static()
-        return self.__e3dc.get_system_info()
+    async def get_system_info(self):
+        await self.__lock.acquire()
+        try:
+            self.__e3dc.get_system_info_static()
+            data = self.__e3dc.get_system_info()
+            return data
+        finally:
+            self.__lock.release()
 
     def __find_power_meter_index(self) -> int:
         indices = [0, 6, 1, 2, 3, 4, 5]
@@ -253,72 +267,101 @@ class E3DCClient:
                 LOGGER.error(f"Powermeter index {index} failed")
         return None
 
-    def get_powermeter_data(self):
-        if self.__pm_index is None:
-            self.__pm_index = self.__find_power_meter_index()
+    async def get_powermeter_data(self):
+        await self.__lock.acquire()
+        try:
+            if self.__pm_index is None:
+                self.__pm_index = self.__find_power_meter_index()
 
-        return self.__e3dc.get_powermeter_data(pmIndex=self.__pm_index)
-
-    def get_battery_data(self):
-        data = []
-        for i in range(0, self.__num_batteries):
-            try:
-                battery_data = self.__e3dc.get_battery_data(batIndex=i)
-                if battery_data is None:
-                    break
-                else:
-                    data.append(battery_data)
-            except NotAvailableError:
-                break
-        self.__num_batteries = len(data)
-        return data
-
-    def get_pvi_data(self):
-        data = []
-        for i in range(0, self.__num_pvi_trackers):
-            try:
-                string_index = 0
-                pvi_data = self.__e3dc.get_pvi_data(stringIndex=string_index, pviTracker=i)
-                if pvi_data is None:
-                    break
-                else:
-                    data.append(pvi_data)
-            except:
-                break
-        self.__num_pvi_trackers = len(data)
-        return data
-
-    def get_live_data(self):
-        data = self.__e3dc.poll()
-        data["time"] = None  # delete from return value because not used and not json serializable
-        return data
-
-    def get_db_data(self, date: date, timespan: DbTimespan):
-        data = self.__e3dc.get_db_data(startDate=date, timespan=timespan.name)
-        if timespan == DbTimespan.YEAR:
-            data["date"] = date.strftime("%Y")
-        elif timespan == DbTimespan.MONTH:
-            data["date"] = date.strftime("%Y/%m")
-        else:
-            data["date"] = date.strftime("%Y/%m/%d")
-        return data
-
-    def get_db_data_day(self, force: bool = False):
-        today = date.today()
-        if force or (today > self.__last_db_data_day):
-            self.__last_db_data_day = today
-            request_date = today - timedelta(days=1)
-            data = self.__e3dc.get_db_data(startDate=request_date, timespan="DAY")
-            data["date"] = request_date.strftime("%Y/%m/%d")
+            data = self.__e3dc.get_powermeter_data(pmIndex=self.__pm_index)
             return data
-        return None
+        finally:
+            self.__lock.release()
 
-    def get_db_data_month(self, force: bool = False):
-        today = date.today()
-        if force or (today.month > self.__last_db_data_month):
-            self.__last_db_data_month = today.month
-            request_date = today.replace(day=1) - relativedelta(months=1)
-            data = self.__e3dc.get_db_data(startDate=request_date, timespan="MONTH")
-            data["date"] = request_date.strftime("%Y/%m")
+    async def get_battery_data(self):
+        await self.__lock.acquire()
+        try:
+            data = []
+            for i in range(0, self.__num_batteries):
+                try:
+                    battery_data = self.__e3dc.get_battery_data(batIndex=i)
+                    if battery_data is None:
+                        break
+                    else:
+                        data.append(battery_data)
+                except NotAvailableError:
+                    break
+            self.__num_batteries = len(data)
             return data
-        return None
+        finally:
+            self.__lock.release()
+
+    async def get_pvi_data(self):
+        await self.__lock.acquire()
+        try:
+            data = []
+            for i in range(0, self.__num_pvi_trackers):
+                try:
+                    string_index = 0
+                    pvi_data = self.__e3dc.get_pvi_data(stringIndex=string_index, pviTracker=i)
+                    if pvi_data is None:
+                        break
+                    else:
+                        data.append(pvi_data)
+                except:
+                    break
+            self.__num_pvi_trackers = len(data)
+            return data
+        finally:
+            self.__lock.release()
+
+    async def get_live_data(self):
+        await self.__lock.acquire()
+        try:
+            data = self.__e3dc.poll()
+            data["time"] = None  # delete from return value because not used and not json serializable
+            return data
+        finally:
+            self.__lock.release()
+
+    async def get_db_data(self, date: date, timespan: DbTimespan):
+        await self.__lock.acquire()
+        try:
+            data = self.__e3dc.get_db_data(startDate=date, timespan=timespan.name)
+            if timespan == DbTimespan.YEAR:
+                data["date"] = date.strftime("%Y")
+            elif timespan == DbTimespan.MONTH:
+                data["date"] = date.strftime("%Y/%m")
+            else:
+                data["date"] = date.strftime("%Y/%m/%d")
+            return data
+        finally:
+            self.__lock.release()
+
+    async def get_db_data_day(self, force: bool = False):
+        await self.__lock.acquire()
+        try:
+            today = date.today()
+            if force or (today > self.__last_db_data_day):
+                self.__last_db_data_day = today
+                request_date = today - timedelta(days=1)
+                data = self.__e3dc.get_db_data(startDate=request_date, timespan="DAY")
+                data["date"] = request_date.strftime("%Y/%m/%d")
+                return data
+            return None
+        finally:
+            self.__lock.release()
+
+    async def get_db_data_month(self, force: bool = False):
+        await self.__lock.acquire()
+        try:
+            today = date.today()
+            if force or (today.month > self.__last_db_data_month):
+                self.__last_db_data_month = today.month
+                request_date = today.replace(day=1) - relativedelta(months=1)
+                data = self.__e3dc.get_db_data(startDate=request_date, timespan="MONTH")
+                data["date"] = request_date.strftime("%Y/%m")
+                return data
+            return None
+        finally:
+            self.__lock.release()
