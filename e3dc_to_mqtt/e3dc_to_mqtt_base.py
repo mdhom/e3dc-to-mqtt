@@ -25,6 +25,7 @@ DEFAULT_ARGS = {
     "mqttbasetopic": "e3dc/",
 }
 
+
 def main():
     try:
         runner = E3DC2MQTT()
@@ -32,15 +33,17 @@ def main():
     except KeyboardInterrupt:
         pass
 
+
 class DbTimespan(Enum):
     DAY = 1
     MONTH = 2
     YEAR = 3
 
+
 class E3DC2MQTT:
     def __init__(self) -> None:
-        e3dc = None # type: E3DCClient
-        mqtt = None # type: MqttClient
+        e3dc = None  # type: E3DCClient
+        mqtt = None  # type: MqttClient
 
     def __add_from_config(self, cmdArgs: dict, config: dict, name: str):
         if name in config:
@@ -205,7 +208,7 @@ class E3DC2MQTT:
         day = int(matches[0][2])
         self.__fetch_db_from_mqtt(DbTimespan.DAY, year, month, day)
 
-    def __fetch_db_from_mqtt(self, timespan:DbTimespan, year:int, month:int=None, day:int=None):
+    def __fetch_db_from_mqtt(self, timespan: DbTimespan, year: int, month: int = None, day: int = None):
         if timespan == DbTimespan.YEAR:
             request_date = date(year, 1, 1)
             topic_attachment = f"{year}"
@@ -222,6 +225,7 @@ class E3DC2MQTT:
 
         data = self.e3dc.get_db_data(request_date, timespan)
         self.mqtt.publish(f"db/data/{topic_attachment}", data)
+
 
 class E3DCClient:
     def __init__(self, host: str, username: str, password: str, rscp_key: str) -> None:
@@ -289,7 +293,7 @@ class E3DCClient:
         data["time"] = None  # delete from return value because not used and not json serializable
         return data
 
-    def get_db_data(self, date:date, timespan:DbTimespan):
+    def get_db_data(self, date: date, timespan: DbTimespan):
         data = self.__e3dc.get_db_data(startDate=date, timespan=timespan.name)
         if timespan == DbTimespan.YEAR:
             data["date"] = date.strftime("%Y")
@@ -318,5 +322,3 @@ class E3DCClient:
             data["date"] = request_date.strftime("%Y/%m")
             return data
         return None
-
-
