@@ -4,7 +4,7 @@ import asyncio
 import json
 import time
 from dateutil.relativedelta import relativedelta
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from concurrent.futures._base import CancelledError
 
 import paho.mqtt.client as mqtt
@@ -71,6 +71,7 @@ async def __main():
         with open(args.configFile) as f:
             config = json.load(f)
         args.mqttbroker = config['mqttbroker']
+        args.mqttclientid = config['mqttclientid']
         args.e3dchost   = config['e3dchost'] 
         args.e3dcusername = config['e3dcusername']
         args.e3dcpassword = config['e3dcpassword']
@@ -153,7 +154,7 @@ class E3DCClient:
         self.__num_batteries = 5
         self.__num_pvi_trackers = 5
         self.__pm_index = None
-        self.__last_db_data_day = datetime.today()
+        self.__last_db_data_day = date.fromtimestamp(0)
         self.__last_db_data_month = -1
 
     def get_system_info(self):
@@ -214,20 +215,20 @@ class E3DCClient:
         return data
 
     def get_db_data_day(self, force:bool = False):
-        start_date = datetime.today() - timedelta(days=1)
-        if force or (start_date > self.__last_db_data_day):
-            self.__last_db_data_day = start_date
-            data = self.__e3dc.get_db_data(startDate=start_date, timespan="DAY")
-            data['date'] = start_date.strftime("%Y-%m-%d")
+        today = date.today()
+        if force or (today > self.__last_db_data_day):
+            self.__last_db_data_day = today
+            data = self.__e3dc.get_db_data(startDate=today, timespan="DAY")
+            data['date'] = today.strftime("%Y-%m-%d")
             return data
         return None
         
     def get_db_data_month(self, force:bool = False):
-        start_date = datetime.today().replace(day=1) - relativedelta(months=1)
-        if force or (start_date.month > self.__last_db_data_month):
-            self.__last_db_data_month = start_date.month
-            data = self.__e3dc.get_db_data(startDate=start_date, timespan="MONTH")
-            data['date'] = start_date.strftime("%Y-%m")
+        today = date.today()
+        if force or (today.month > self.__last_db_data_month):
+            self.__last_db_data_month = today.month
+            data = self.__e3dc.get_db_data(startDate=today.replace(day=1), timespan="MONTH")
+            data['date'] = today.strftime("%Y-%m")
             return data
         return None
 
