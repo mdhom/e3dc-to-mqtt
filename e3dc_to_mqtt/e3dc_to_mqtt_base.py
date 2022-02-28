@@ -218,8 +218,9 @@ class E3DCClient:
         today = date.today()
         if force or (today > self.__last_db_data_day):
             self.__last_db_data_day = today
-            data = self.__e3dc.get_db_data(startDate=today, timespan="DAY")
-            data['date'] = today.strftime("%Y-%m-%d")
+            request_date = today - timedelta(days=1)
+            data = self.__e3dc.get_db_data(startDate=request_date, timespan="DAY")
+            data['date'] = request_date.strftime("%Y-%m-%d")
             return data
         return None
         
@@ -227,8 +228,9 @@ class E3DCClient:
         today = date.today()
         if force or (today.month > self.__last_db_data_month):
             self.__last_db_data_month = today.month
-            data = self.__e3dc.get_db_data(startDate=today.replace(day=1), timespan="MONTH")
-            data['date'] = today.strftime("%Y-%m")
+            request_date = today.replace(day=1) - relativedelta(months=1)
+            data = self.__e3dc.get_db_data(startDate=request_date, timespan="MONTH")
+            data['date'] = request_date.strftime("%Y-%m")
             return data
         return None
 
