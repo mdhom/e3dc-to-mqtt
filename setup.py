@@ -3,7 +3,7 @@ from setuptools import setup
 VERSION = "0.0.1"
 NAME = "e3dc-to-mqtt"
 
-install_requires = ["pye3dc", "paho-mqtt"]
+install_requires = ["pye3dc", "paho-mqtt", "events"]
 
 setup(
     name=NAME,
