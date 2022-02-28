@@ -16,36 +16,67 @@ from .__version import __version__
 
 LOGGER = logging.getLogger("e3dc-to-mqtt")
 
+DEFAULT_ARGS = {
+    'loglevel': 'WARNING',
+    'interval': 1.0,
+    'mqttport': 1883,
+    'mqttkeepalive': 60,
+    'mqttbasetopic': 'e3dc',
+}
+
 def main():
     try:
         asyncio.run(__main())
     except KeyboardInterrupt:
         pass
 
+def __add_from_config(cmdArgs:dict, config:dict, name:str):
+    if name in config:
+        setattr(cmdArgs, name, config[name])
+
 async def __main():
     parser = argparse.ArgumentParser(
         prog='e3dc-to-mqtt',
         description='Commandline Interface to interact with E3/DC devices')
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
-    parser.add_argument('--releaseName',    type=str,   dest='releaseName', required=False, help='Name of the current release')
-    parser.add_argument('--configFile',     type=str,   dest='configFile',  required=False, help='File where config is stored (JSON)')
-    parser.add_argument('--loglevel',       type=str,   dest='loglevel',    required=False, default="WARNING", help='Minimum log level, DEBUG/INFO/WARNING/ERROR/CRITICAL"')
-    parser.add_argument('--interval',       type=float, dest='interval',    required=False, default=1.0, help='Interval in seconds in which E3/DC data is requested. Minimum: 1.0')
+    parser.add_argument('--releaseName',    type=str,   dest='releaseName',   help='Name of the current release')
+    parser.add_argument('--configFile',     type=str,   dest='configFile',    help='File where config is stored (JSON)')
+    parser.add_argument('--loglevel',       type=str,   dest='loglevel',      help='Minimum log level, DEBUG/INFO/WARNING/ERROR/CRITICAL"', default=DEFAULT_ARGS['loglevel'])
+    parser.add_argument('--interval',       type=float, dest='interval',      help='Interval in seconds in which E3/DC data is requested. Minimum: 1.0', default=DEFAULT_ARGS['interval'])
 
-    parser.add_argument('--mqtt-broker',    type=str, dest='mqttbroker',    required=False, help='Address of MQTT Broker to connect to')
-    parser.add_argument('--mqtt-port',      type=int, dest='mqttport',      required=False, default=1883, help='Port of MQTT Broker. Default is 1883 (8883 for TLS)')
-    parser.add_argument('--mqtt-clientid',  type=str, dest='mqttclientid',  required=False, help='Id of the client. Default is a random id')
-    parser.add_argument('--mqtt-keepalive', type=int, dest='mqttkeepalive', required=False, default=60, help='Time between keep-alive messages')
-    parser.add_argument('--mqtt-username',  type=str, dest='mqttusername',  required=False, help='Username for MQTT broker')
-    parser.add_argument('--mqtt-password',  type=str, dest='mqttpassword',  required=False, help='Password for MQTT broker')
-    parser.add_argument('--mqtt-basetopic', type=str, dest='mqttbasetopic', required=False, default='e3dc', help='Base topic of mqtt messages')
+    parser.add_argument('--mqtt-broker',    type=str,   dest='mqttbroker',    help='Address of MQTT Broker to connect to')
+    parser.add_argument('--mqtt-port',      type=int,   dest='mqttport',      help='Port of MQTT Broker. Default is 1883 (8883 for TLS)', default=DEFAULT_ARGS['mqttport'])
+    parser.add_argument('--mqtt-clientid',  type=str,   dest='mqttclientid',  help='Id of the client. Default is a random id')
+    parser.add_argument('--mqtt-keepalive', type=int,   dest='mqttkeepalive', help='Time between keep-alive messages', default=DEFAULT_ARGS['mqttkeepalive'])
+    parser.add_argument('--mqtt-username',  type=str,   dest='mqttusername',  help='Username for MQTT broker')
+    parser.add_argument('--mqtt-password',  type=str,   dest='mqttpassword',  help='Password for MQTT broker')
+    parser.add_argument('--mqtt-basetopic', type=str,   dest='mqttbasetopic', help='Base topic of mqtt messages', default=DEFAULT_ARGS['mqttbasetopic'])
     
-    parser.add_argument('--e3dc-host',      type=str, dest='e3dchost',      required=False,  help='Address of the E3/DC device')
-    parser.add_argument('--e3dc-username',  type=str, dest='e3dcusername',  required=False,  help='Username for login on E3/DC device')
-    parser.add_argument('--e3dc-password',  type=str, dest='e3dcpassword',  required=False,  help='Password for login on E3/DC device')
-    parser.add_argument('--e3dc-rscpkey',   type=str, dest='e3dcrscpkey',   required=False,  help='RSCP key for login on E3/DC device. Must be set on device.')
+    parser.add_argument('--e3dc-host',      type=str,   dest='e3dchost',      help='Address of the E3/DC device')
+    parser.add_argument('--e3dc-username',  type=str,   dest='e3dcusername',  help='Username for login on E3/DC device')
+    parser.add_argument('--e3dc-password',  type=str,   dest='e3dcpassword',  help='Password for login on E3/DC device')
+    parser.add_argument('--e3dc-rscpkey',   type=str,   dest='e3dcrscpkey',   help='RSCP key for login on E3/DC device. Must be set on device.')
     
     args = parser.parse_args()
+    
+    if args.configFile is not None:
+        with open(args.configFile) as f:
+            config = json.load(f)
+        __add_from_config(args, config, 'loglevel')
+        __add_from_config(args, config, 'interval')
+
+        __add_from_config(args, config, 'mqttbroker')
+        __add_from_config(args, config, 'mqttport')
+        __add_from_config(args, config, 'mqttclientid')
+        __add_from_config(args, config, 'mqttkeepalive')
+        __add_from_config(args, config, 'mqttusername')
+        __add_from_config(args, config, 'mqttpassword')
+        __add_from_config(args, config, 'mqttbasetopic')
+        
+        __add_from_config(args, config, 'e3dchost')
+        __add_from_config(args, config, 'e3dcusername')
+        __add_from_config(args, config, 'e3dcpassword')
+        __add_from_config(args, config, 'e3dcrscpkey')
 
     logging.basicConfig(level=args.loglevel)
 
@@ -66,32 +97,22 @@ async def __main():
     if args.releaseName is not None:
         LOGGER.debug(f'Release name: {args.releaseName}')
 
-    if args.configFile is not None:
-        LOGGER.debug(f'Loading config from file {args.configFile}')
-        with open(args.configFile) as f:
-            config = json.load(f)
-        args.mqttbroker = config['mqttbroker']
-        args.mqttclientid = config['mqttclientid']
-        args.e3dchost   = config['e3dchost'] 
-        args.e3dcusername = config['e3dcusername']
-        args.e3dcpassword = config['e3dcpassword']
-        args.e3dcrscpkey  = config['e3dcrscpkey']
-    else:
-        if args.mqttbroker is None:
-            LOGGER.error(f'no mqtt broker given')
-            return
-        if args.e3dchost is None:
-            LOGGER.error(f'no E3DC host given')
-            return
-        if args.e3dcusername is None:
-            LOGGER.error(f'no E3DC username given')
-            return
-        if args.e3dcpassword is None:
-            LOGGER.error(f'no E3DC password given')
-            return
-        if args.e3dcrscpkey is None:
-            LOGGER.error(f'no E3DC RSCP key given')
-            return
+        
+    if args.mqttbroker is None:
+        LOGGER.error(f'no mqtt broker given')
+        return
+    if args.e3dchost is None:
+        LOGGER.error(f'no E3DC host given')
+        return
+    if args.e3dcusername is None:
+        LOGGER.error(f'no E3DC username given')
+        return
+    if args.e3dcpassword is None:
+        LOGGER.error(f'no E3DC password given')
+        return
+    if args.e3dcrscpkey is None:
+        LOGGER.error(f'no E3DC RSCP key given')
+        return
 
     try:
         mqtt = MqttClient(args.mqttbroker, args.mqttport, args.mqttclientid, args.mqttkeepalive, args.mqttusername, args.mqttpassword, args.mqttbasetopic)
