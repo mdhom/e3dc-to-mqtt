@@ -214,10 +214,10 @@ class E3DC2MQTT:
             topic_attachment = f"{year}"
         elif timespan == DbTimespan.MONTH:
             request_date = date(year, month, 1)
-            topic_attachment = f"{year}/{month}"
+            topic_attachment = f"{year}/{str(month).zfill(2)}"
         else:
             request_date = date(year, month, day)
-            topic_attachment = f"{year}/{month}/{day}"
+            topic_attachment = f"{year}/{str(month).zfill(2)}/{str(day).zfill(2)}"
 
         if request_date > date.today():
             LOGGER.error(f"invalid request_date: {request_date}")
