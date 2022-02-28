@@ -7,12 +7,11 @@ from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta, date
 from concurrent.futures._base import CancelledError
 
-import paho.mqtt.client as mqtt
-
 from e3dc import E3DC
 from e3dc._e3dc import NotAvailableError
 
 from .__version import __version__
+from .__mqtt import MqttClient
 
 LOGGER = logging.getLogger("e3dc-to-mqtt")
 
@@ -24,18 +23,15 @@ DEFAULT_ARGS = {
     "mqttbasetopic": "e3dc",
 }
 
-
 def main():
     try:
         asyncio.run(__main())
     except KeyboardInterrupt:
         pass
 
-
 def __add_from_config(cmdArgs: dict, config: dict, name: str):
     if name in config:
         setattr(cmdArgs, name, config[name])
-
 
 async def __main():
     parser = argparse.ArgumentParser(prog="e3dc-to-mqtt", description="Commandline Interface to interact with E3/DC devices")
@@ -119,7 +115,7 @@ async def __main():
         return
 
     try:
-        mqtt = MqttClient(args.mqttbroker, args.mqttport, args.mqttclientid, args.mqttkeepalive, args.mqttusername, args.mqttpassword, args.mqttbasetopic)
+        mqtt = MqttClient(LOGGER, args.mqttbroker, args.mqttport, args.mqttclientid, args.mqttkeepalive, args.mqttusername, args.mqttpassword, args.mqttbasetopic)
         e3dc = E3DCClient(args.e3dchost, args.e3dcusername, args.e3dcpassword, args.e3dcrscpkey)
 
         last_cycle = 0.0
@@ -261,38 +257,3 @@ class E3DCClient:
         return None
 
 
-class MqttClient:
-    def __init__(self, broker: str, port: int, clientId: str, keepAlive: int, username: str, password: str, basetopic: str) -> None:
-        self.__client = mqtt.Client(clientId if clientId is not None else "e3dc-to-mqtt")
-        self.__client.on_connect = self.__on_connect
-        self.__client.on_disconnect = self.__on_disconnect
-        self.__basetopic = basetopic
-
-        if username is not None:
-            self.__client.username_pw_set(username, password)
-
-        self.is_connected = False
-
-        self.__client.connect_async(broker, port, keepAlive)
-        self.__client.loop_start()
-
-    def disconnect(self):
-        self.__client.disconnect()
-
-    def __on_connect(self, mqtt_client, userdata, flags, rc):
-        LOGGER.debug(f"MQTT connected")
-        self.is_connected = True
-
-    def __on_disconnect(self, client, userdata, rc):
-        # TODO test with mosquitto in docker desktop and implement reconnection
-        self.is_connected = False
-        del client
-        del userdata
-
-        if rc == 0:
-            LOGGER.info("Client successfully disconnected")
-        else:
-            LOGGER.info("Client unexpectedly disconnected (%d), trying to reconnect", rc)
-
-    def publish(self, topic: str, payload):
-        self.__client.publish(self.__basetopic + "/" + topic, json.dumps(payload))
