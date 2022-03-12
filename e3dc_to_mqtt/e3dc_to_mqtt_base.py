@@ -29,8 +29,10 @@ DEFAULT_ARGS = {
 
 def main():
     try:
+        loop = asyncio.get_event_loop()
         runner = E3DC2MQTT()
-        asyncio.run(runner.run())
+        loop.run_until_complete(runner.run(loop))
+        loop.close()
     except KeyboardInterrupt:
         pass
 
@@ -51,8 +53,8 @@ class E3DC2MQTT:
         if name in config:
             setattr(cmdArgs, name, config[name])
 
-    async def run(self):
-        self.loop = asyncio.new_event_loop()
+    async def run(self, loop:asyncio.AbstractEventLoop):
+        self.loop = loop
         parser = argparse.ArgumentParser(prog="e3dc-to-mqtt", description="Commandline Interface to interact with E3/DC devices")
         parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
         parser.add_argument("--releaseName", type=str, dest="releaseName", help="Name of the current release")
@@ -194,24 +196,33 @@ class E3DC2MQTT:
 
     def __on_mqtt_get_year(self, client, userdata, msg):
         matches = re.findall(r"\/(\d+$)", msg.topic, re.MULTILINE)
+        if len(matches) < 1 or len(matches[0]) < 1:
+            LOGGER.error(f"failed to parse /yyyy from topic {msg.topic}")
+            return None
         year = int(matches[0])
         coroutine = self.__fetch_db_from_mqtt(DbTimespan.YEAR, year)
-        self.loop.run_until_complete(coroutine)
+        self.loop.create_task(coroutine)
 
     def __on_mqtt_get_month(self, client, userdata, msg):
         matches = re.findall(r"\/(\d+)\/(\d+$)", msg.topic, re.MULTILINE)
+        if len(matches) < 1 or len(matches[0]) < 2:
+            LOGGER.error(f"failed to parse /yyyy/mm from topic {msg.topic}")
+            return None
         year = int(matches[0][0])
         month = int(matches[0][1])
         coroutine = self.__fetch_db_from_mqtt(DbTimespan.MONTH, year, month)
-        self.loop.run_until_complete(coroutine)
+        self.loop.create_task(coroutine)
 
     def __on_mqtt_get_day(self, client, userdata, msg):
         matches = re.findall(r"\/(\d+)\/(\d+)\/(\d+$)", msg.topic, re.MULTILINE)
+        if len(matches) < 1 or len(matches[0]) < 3:
+            LOGGER.error(f"failed to parse /yyyy/mm/dd from topic {msg.topic}")
+            return None
         year = int(matches[0][0])
         month = int(matches[0][1])
         day = int(matches[0][2])
         coroutine = self.__fetch_db_from_mqtt(DbTimespan.DAY, year, month, day)
-        self.loop.run_until_complete(coroutine)
+        self.loop.create_task(coroutine)
 
     async def __fetch_db_from_mqtt(self, timespan: DbTimespan, year: int, month: int = None, day: int = None):
         try:
@@ -232,7 +243,7 @@ class E3DC2MQTT:
             data = await self.e3dc.get_db_data(request_date, timespan)
             self.mqtt.publish(f"db/data/{topic_attachment}", data)
         except Exception as e:
-            LOGGER.exception()
+            LOGGER.exception("exception in __fetch_db_from_mqtt")
 
 
 class E3DCClient:
