@@ -53,7 +53,7 @@ class E3DC2MQTT:
         if name in config:
             setattr(cmdArgs, name, config[name])
 
-    async def run(self, loop:asyncio.AbstractEventLoop):
+    async def run(self, loop: asyncio.AbstractEventLoop):
         self.loop = loop
         parser = argparse.ArgumentParser(prog="e3dc-to-mqtt", description="Commandline Interface to interact with E3/DC devices")
         parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
