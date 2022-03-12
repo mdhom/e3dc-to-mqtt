@@ -349,6 +349,8 @@ class E3DCClient:
                 data["date"] = request_date.strftime("%Y/%m/%d")
                 return data
             return None
+        except Exception:
+            LOGGER.error("failed to get_db_data_day")
         finally:
             self.__lock.release()
 
@@ -363,5 +365,7 @@ class E3DCClient:
                 data["date"] = request_date.strftime("%Y/%m")
                 return data
             return None
+        except Exception:
+            LOGGER.error("failed to get_db_data_month")
         finally:
             self.__lock.release()
