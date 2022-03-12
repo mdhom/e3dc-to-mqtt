@@ -264,7 +264,7 @@ class E3DCClient:
                     LOGGER.debug(f"Powermeter index {index} found")
                     return index
             except Exception:
-                LOGGER.error(f"Powermeter index {index} failed")
+                LOGGER.debug(f"Powermeter index {index} failed")
         return None
 
     async def get_powermeter_data(self):
@@ -366,6 +366,6 @@ class E3DCClient:
                 return data
             return None
         except Exception:
-            LOGGER.error("failed to get_db_data_month")
+            LOGGER.error("failed to get_db_data_month, probably no data available yet")
         finally:
             self.__lock.release()
