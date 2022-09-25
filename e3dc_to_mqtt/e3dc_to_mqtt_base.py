@@ -178,6 +178,7 @@ class E3DC2MQTT:
                 if db_data_day is not None:
                     LOGGER.debug(f"received db data DAY:\r\n" + json.dumps(db_data_day, indent=2))
                     self.mqtt.publish(f"db/data/{db_data_day['date']}", db_data_day)
+                    self.mqtt.publish(f"db/data/daily", db_data_day)
 
                 db_data_month = await self.e3dc.get_db_data_month()
                 if db_data_month is not None:
