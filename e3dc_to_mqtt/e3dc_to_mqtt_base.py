@@ -101,7 +101,7 @@ class E3DC2MQTT:
             print(f'Invalid log level given: {args.loglevel}, allowed values: {", ".join(valid_loglevels)}')
             return
 
-        logging.basicConfig(level=args.loglevel)
+        logging.basicConfig(level=args.loglevel, format="%(asctime)s:%(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
         LOGGER.debug("")
         LOGGER.debug("  ______ ____     _______   _____    ___        __  __  ____ _______ _______ ")
