@@ -13,7 +13,7 @@ ENV ADDITIONAL_PARAMETERS=
 #RUN apt-get update && apt-get install -y git
 #RUN pip install -e git+git://github.com/fsantini/python-e3dc.git@743fdc21c846e04b3dd75ff561e5056db93856d2#egg=pye3dc
 RUN pip install --upgrade pip
-RUN pip install "pye3dc>=0.7.0"
+RUN pip install "pye3dc==0.7.1"
 RUN pip install paho-mqtt
 RUN pip install Events
 
