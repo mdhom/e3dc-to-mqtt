@@ -3,10 +3,10 @@ import re
 import paho.mqtt.client as mqtt
 from paho.mqtt.packettypes import PacketTypes
 import json
-import random
-import string
 
 from events import Events
+
+from .dateTimeEncoder import DateTimeEncoder
 
 
 class Payload(object):
@@ -15,7 +15,7 @@ class Payload(object):
         self.input_string = j
 
     def get_input(self):
-        return json.dumps(self.__dict__)
+        return json.dumps(self.__dict__, cls=DateTimeEncoder)
 
 
 class Subscription:
@@ -90,15 +90,15 @@ class MqttClient:
         if payload is None:
             self.client.publish(publish_topic, "", qos, retain)
         elif type(payload) is list:
-            self.client.publish(publish_topic, json.dumps(payload), qos, retain)
+            self.client.publish(publish_topic, json.dumps(payload, cls=DateTimeEncoder), qos, retain)
         elif not type(payload) is dict:
             self.client.publish(publish_topic, payload, qos, retain)
         else:
-            json_payload = json.dumps(payload)
+            json_payload = json.dumps(payload, cls=DateTimeEncoder)
             self.client.publish(publish_topic, json_payload, qos, retain)
 
     def publish_raw(self, topic, payload, qos=0, retain=False):
-        json_payload = json.dumps(payload)
+        json_payload = json.dumps(payload, cls=DateTimeEncoder)
         self.client.publish(topic, json_payload, qos, retain)
 
     def subscribe_to(self, topic: str, callback):

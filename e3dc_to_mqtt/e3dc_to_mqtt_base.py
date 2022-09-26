@@ -15,6 +15,7 @@ from e3dc._e3dc import NotAvailableError
 
 from .__version import __version__
 from .__mqtt import MqttClient
+from .dateTimeEncoder import DateTimeEncoder
 
 LOGGER = logging.getLogger("e3dc-to-mqtt")
 
@@ -176,15 +177,14 @@ class E3DC2MQTT:
 
                 db_data_day = await self.e3dc.get_db_data_day()
                 if db_data_day is not None:
-                    LOGGER.debug(f"received db data DAY:\r\n" + json.dumps(db_data_day, indent=2))
+                    LOGGER.debug(f"received db data DAY:\r\n" + json.dumps(db_data_day, indent=2, cls=DateTimeEncoder))
                     self.mqtt.publish(f"db/data/{db_data_day['date']}", db_data_day)
                     self.mqtt.publish(f"db/data/daily", db_data_day)
 
                 db_data_month = await self.e3dc.get_db_data_month()
                 if db_data_month is not None:
-                    LOGGER.debug(f"received db data MONTH:\r\n" + json.dumps(db_data_month, indent=2))
+                    LOGGER.debug(f"received db data MONTH:\r\n" + json.dumps(db_data_month, indent=2, cls=DateTimeEncoder))
                     self.mqtt.publish(f"db/data/{db_data_month['date']}", db_data_month)
-
         except KeyboardInterrupt:
             pass  # do nothing, close requested
         except CancelledError:
