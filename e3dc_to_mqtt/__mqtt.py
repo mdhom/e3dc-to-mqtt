@@ -45,9 +45,8 @@ class MqttClient:
         client_id = clientId if clientId is not None else "e3dc-to-mqtt"
         self.logger.debug(f"using client_id {client_id}")
         self.client = mqtt.Client(client_id, protocol=mqtt.MQTTv5)
-        if tls == True:
-            self.client.tls_set(certifi.where())
-            self.client.tls_insecure_set(True)
+        self.client.tls_set(certifi.where())
+        self.client.tls_insecure_set(True)
         self.connect_event = asyncio.Event()
 
         self.events = Events()
@@ -67,7 +66,7 @@ class MqttClient:
         self.client.on_connect = self.__on_connect
         self.client.on_disconnect = self.__on_disconnect
         self.client.on_message = self.__on_message
-        self.logger.debug(f"connect to {self.broker} as user {self.port}")
+        self.logger.debug(f"connect to {self.broker} as user {self.username}")
         self.client.connect_async(self.broker)
         self.client.loop_start()
 
