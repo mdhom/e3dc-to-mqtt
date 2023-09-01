@@ -47,6 +47,7 @@ class MqttClient:
         self.client = mqtt.Client(client_id, protocol=mqtt.MQTTv5)
         if tls == True:
             self.client.tls_set(certifi.where())
+            self.client.tls_insecure_set(True)
         self.connect_event = asyncio.Event()
 
         self.events = Events()
