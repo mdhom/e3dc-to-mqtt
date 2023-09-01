@@ -3,6 +3,7 @@ import re
 import paho.mqtt.client as mqtt
 from paho.mqtt.packettypes import PacketTypes
 import json
+import certifi
 
 from events import Events
 
@@ -27,7 +28,7 @@ class Subscription:
 class MqttClient:
     Instance = None  # type: MqttClient
 
-    def __init__(self, logger, loop, broker: str, port: int, clientId: str, keepAlive: int, username: str, password: str, basetopic: str) -> None:
+    def __init__(self, logger, loop, broker: str, port: int, clientId: str, keepAlive: int, username: str, password: str, basetopic: str, tls: bool) -> None:
         MqttClient.Instance = self
 
         self.logger = logger
@@ -44,6 +45,8 @@ class MqttClient:
         client_id = clientId if clientId is not None else "e3dc-to-mqtt"
         self.logger.debug(f"using client_id {client_id}")
         self.client = mqtt.Client(client_id, protocol=mqtt.MQTTv5)
+        if tls == True:
+            self.client.tls_set(certifi.where())
         self.connect_event = asyncio.Event()
 
         self.events = Events()
