@@ -25,6 +25,7 @@ DEFAULT_ARGS = {
     "mqttport": 1883,
     "mqttkeepalive": 60,
     "mqttbasetopic": "e3dc/",
+    "mqtttls": False
 }
 
 
@@ -65,6 +66,7 @@ class E3DC2MQTT:
 
         parser.add_argument("--mqtt-broker", type=str, dest="mqttbroker", help="Address of MQTT Broker to connect to")
         parser.add_argument("--mqtt-port", type=int, dest="mqttport", help="Port of MQTT Broker. Default is 1883 (8883 for TLS)", default=DEFAULT_ARGS["mqttport"])
+        parser.add_argument("--mqtt-tls", type=bool, dest="mqtttls", help="Use TLS mode", default=DEFAULT_ARGS["mqtttls"])
         parser.add_argument("--mqtt-clientid", type=str, dest="mqttclientid", help="Id of the client. Default is a random id")
         parser.add_argument("--mqtt-keepalive", type=int, dest="mqttkeepalive", help="Time between keep-alive messages", default=DEFAULT_ARGS["mqttkeepalive"])
         parser.add_argument("--mqtt-username", type=str, dest="mqttusername", help="Username for MQTT broker")
@@ -86,6 +88,7 @@ class E3DC2MQTT:
 
             self.__add_from_config(args, config, "mqttbroker")
             self.__add_from_config(args, config, "mqttport")
+            self.__add_from_config(args, config, "mqtttls")
             self.__add_from_config(args, config, "mqttclientid")
             self.__add_from_config(args, config, "mqttkeepalive")
             self.__add_from_config(args, config, "mqttusername")
@@ -137,7 +140,7 @@ class E3DC2MQTT:
             return
 
         try:
-            self.mqtt = MqttClient(LOGGER, self.loop, args.mqttbroker, args.mqttport, args.mqttclientid, args.mqttkeepalive, args.mqttusername, args.mqttpassword, args.mqttbasetopic)
+            self.mqtt = MqttClient(LOGGER, self.loop, args.mqttbroker, args.mqttport, args.mqttclientid, args.mqttkeepalive, args.mqttusername, args.mqttpassword, args.mqttbasetopic, args.mqtttls)
             await self.mqtt.start()
             self.mqtt.subscribe_to("/db/get/+", self.__on_mqtt_get_year)
             self.mqtt.subscribe_to("/db/get/+/+", self.__on_mqtt_get_month)
